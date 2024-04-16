@@ -1,4 +1,5 @@
-import * as app from "./app"
+// import * as app from "./app"
+import "./mainapp"
 
 // app.sendToken()
 // app.sendSol()
