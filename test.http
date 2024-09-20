@@ -1,0 +1,11 @@
+curl https://nd-666-486-702.p2pify.com/a152a989afaaff2af9bcf29bfef11523 -X POST -H "Content-Type: application/json" -d '
+  {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "getTransaction",
+    "params": [
+      "RvEsgF8fWcW2tSAxLPi4VmwJy2xhAoismrTiYfwXq62b9jPgUbWnxWtXcLQshkUNnzmQ5XzCF7Cat6b8iZd7NU5",
+      "json"
+    ]
+  }
+'

@@ -14,7 +14,8 @@ const mintAddress = ""
 // 	wsEndpoint: process.env.WS_ENDPOINT,
 // });
 
-const QUICKNODE_RPC = "helius mainet"
+const QUICKNODE_RPC =
+    "https://mainnet.helius-rpc.com/?api-key=7ac71d07-8188-40ac-bacc-d91d36b61b38"
 const connection = new solana.Connection(
     QUICKNODE_RPC,
     "confirmed"

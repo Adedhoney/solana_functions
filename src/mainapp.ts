@@ -7,10 +7,13 @@ dotenv.config()
 console.log("gets here")
 // const { HTTP_LINK, WSS_LINK } = process.env
 
-const sender = "private key"
-const reciever = "public key"
+const sender =
+    "4uKPn2P8oZccWm2HCBCLb6w8pGVhRi9gimR4vy81qfhMtH3RQK4RSNRD5JpXY61cECZotbgWAmU3f4CDi4MtbatH"
+const reciever =
+    "9ZDYNt4s652TrcJ6CTvwv1xPK5BVNMR2sfAjD5t7s2Go"
 
-const tokenToSend = "token address"
+const tokenToSend =
+    "YQir6ZeRCEhQn2Mo37U3JcLHVFviTZJsRnSWdLZihuu"
 
 ;(async () => {
     const result = await sole.sendSplTokenWithBase58(
