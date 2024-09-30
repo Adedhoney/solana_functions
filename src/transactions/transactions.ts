@@ -11,6 +11,12 @@ import {
 } from "@solana/web3.js"
 import { sendBundle } from "./Bundle"
 import { searcherClient } from "jito-ts/dist/sdk/block-engine/searcher"
+import dotenv from "dotenv"
+import base58 from "bs58"
+import { Wallet } from "@project-serum/anchor"
+import axios from "axios"
+// import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
+dotenv.config()
 
 const blockEngineUrl = process.env.BLOCK_ENGINE_URL || ""
 
@@ -26,7 +32,6 @@ const sendSolTrasaction = async (
         toPubkey: toKey,
         lamports: numOfSol * LAMPORTS_PER_SOL,
     })
-    console.log(fromKeyPair.publicKey.toString())
 
     const blockHash = (
         await connection.getLatestBlockhash("confirmed")
@@ -41,9 +46,14 @@ const sendSolTrasaction = async (
     const transaction = new VersionedTransaction(messageV0)
     transaction.sign([fromKeyPair])
 
-    const sc = searcherClient(blockEngineUrl, fromKeyPair)
+    const sc = searcherClient(blockEngineUrl)
     const bundleTransactionLimit = parseInt(
         process.env.BUNDLE_TRANSACTION_LIMIT || "5"
+    )
+
+    console.log(
+        "txn signature is: https://solscan.io/tx/",
+        base58.encode(transaction.signatures[0])
     )
 
     await sendBundle(
@@ -76,7 +86,7 @@ const sendSplToken = async (
     const splToken = await import("@solana/spl-token")
     // Change mint address to that of your token
     const mintAddress = new PublicKey(
-        "4JeGKgkrwcNJMESbJp5KrnQVmQdEffwr7zhicijz2BgC"
+        "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN"
     )
     const accountInfo =
         await connection.getParsedAccountInfo(mintAddress)
@@ -101,7 +111,9 @@ const sendSplToken = async (
         tokenAccount.address,
         destinationAccount.address,
         fromKeyPair.publicKey,
-        numOfToken * Math.pow(10, tokenDecimals)
+        numOfToken * Math.pow(10, tokenDecimals),
+        [],
+        splToken.TOKEN_PROGRAM_ID
     )
     const blockHash = (
         await connection.getLatestBlockhash("confirmed")
@@ -116,16 +128,127 @@ const sendSplToken = async (
     const transaction = new VersionedTransaction(messageV0)
     transaction.sign([fromKeyPair])
 
-    const sc = searcherClient(blockEngineUrl, fromKeyPair)
+    const sc = searcherClient(blockEngineUrl)
     const bundleTransactionLimit = parseInt(
         process.env.BUNDLE_TRANSACTION_LIMIT || "5"
     )
-
+    console.log(
+        "txn signature is: https://solscan.io/tx/",
+        base58.encode(transaction.signatures[0])
+    )
     await sendBundle(
         sc,
         [transaction],
         bundleTransactionLimit,
         connection,
+        fromKeyPair
+    )
+}
+
+const jupiterSwap = async (
+    connection: Connection,
+    quoteUrl: string,
+    wallet: Wallet,
+    fromKeyPair: Keypair
+) => {
+    const quoteResponse = (await axios.get(quoteUrl)).data
+
+    const swapTransactionResponse = await axios.post(
+        `${process.env.JUPITER_SWAP_URL}/swap`,
+        {
+            quoteResponse,
+
+            userPublicKey: wallet.publicKey.toString(),
+
+            wrapAndUnwrapSol: true,
+        },
+        {
+            headers: {
+                "Content-Type": "application/json",
+            },
+        }
+    )
+    const swapTransaction =
+        swapTransactionResponse.data.swapTransaction
+
+    // deserialize the transaction
+    const swapTransactionBuf = Buffer.from(
+        swapTransaction,
+        "base64"
+    )
+    const transaction = VersionedTransaction.deserialize(
+        swapTransactionBuf
+    )
+    console.log(transaction)
+    const blockHash = (
+        await connection.getLatestBlockhash("confirmed")
+    ).blockhash
+    // add blockHash
+    transaction.message.recentBlockhash = blockHash
+
+    // sign the transaction
+    transaction.sign([wallet.payer])
+
+    const sc = searcherClient(blockEngineUrl)
+    const bundleTransactionLimit = parseInt(
+        process.env.BUNDLE_TRANSACTION_LIMIT || "5"
+    )
+    console.log(
+        `txn signature is: https://solscan.io/tx/${base58.encode(
+            transaction.signatures[0]
+        )}`
+    )
+    await sendBundle(
+        sc,
+        [transaction],
+        bundleTransactionLimit,
+        connection,
+        fromKeyPair
+    )
+}
+
+const tokenToSolSwap = async (
+    connection: Connection,
+    fromKeyPair: Keypair,
+    outputMint: string,
+    numberOfSol: number
+) => {
+    const wallet = new Wallet(fromKeyPair)
+    const quoteUrl = `${
+        process.env.JUPITER_SWAP_URL
+    }/quote?inputMint=${
+        process.env.SOL_ADDRESS
+    }&outputMint=${outputMint}&amount=${
+        numberOfSol * LAMPORTS_PER_SOL
+    }&slippageBps=50`
+
+    await jupiterSwap(
+        connection,
+        quoteUrl,
+        wallet,
+        fromKeyPair
+    )
+}
+
+const solToTokenSwap = async (
+    connection: Connection,
+    fromKeyPair: Keypair,
+    inputMint: string,
+    numberOfSol: number
+) => {
+    const wallet = new Wallet(fromKeyPair)
+    const quoteUrl = `${
+        process.env.JUPITER_SWAP_URL
+    }/quote?inputMint=${inputMint}&outputMint=${
+        process.env.SOL_ADDRESS
+    }&amount=${
+        numberOfSol * LAMPORTS_PER_SOL
+    }&slippageBps=50`
+
+    await jupiterSwap(
+        connection,
+        quoteUrl,
+        wallet,
         fromKeyPair
     )
 }
@@ -173,4 +296,6 @@ export {
     requestAirdrop,
     sendSplToken,
     mintToken,
+    tokenToSolSwap,
+    solToTokenSwap,
 }
