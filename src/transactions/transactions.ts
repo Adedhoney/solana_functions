@@ -210,15 +210,15 @@ const jupiterSwap = async (
 const tokenToSolSwap = async (
     connection: Connection,
     fromKeyPair: Keypair,
-    outputMint: string,
+    inputMint: string,
     numberOfSol: number
 ) => {
     const wallet = new Wallet(fromKeyPair)
     const quoteUrl = `${
         process.env.JUPITER_SWAP_URL
-    }/quote?inputMint=${
+    }/quote?inputMint=${inputMint}&outputMint=${
         process.env.SOL_ADDRESS
-    }&outputMint=${outputMint}&amount=${
+    }&amount=${
         numberOfSol * LAMPORTS_PER_SOL
     }&slippageBps=50`
 
@@ -233,15 +233,15 @@ const tokenToSolSwap = async (
 const solToTokenSwap = async (
     connection: Connection,
     fromKeyPair: Keypair,
-    inputMint: string,
+    outputMint: string,
     numberOfSol: number
 ) => {
     const wallet = new Wallet(fromKeyPair)
     const quoteUrl = `${
         process.env.JUPITER_SWAP_URL
-    }/quote?inputMint=${inputMint}&outputMint=${
+    }/quote?inputMint=${
         process.env.SOL_ADDRESS
-    }&amount=${
+    }&outputMint=${outputMint}&amount=${
         numberOfSol * LAMPORTS_PER_SOL
     }&slippageBps=50`
 
